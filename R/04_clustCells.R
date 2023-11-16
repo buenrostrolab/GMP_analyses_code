@@ -98,29 +98,11 @@ cellMeta <- cbind(umap.d,cellMeta)
 
 cellMeta$Condition <- factor(cellMeta$Condition,levels=c("WT","Tet2KO","Tet2KO_Sox4OE"))
 
-saveRDS(cellMeta,"./data/annot/cellMeta.rds")
-
 cisZ <- modelMatSelection(cisOut, 'cell', 'Z-score')
 
 saveRDS(cisZ,"./processed_results/DR/cisTopics/scATAC_filt_cisTopics_cellZ.rds")
 
 # Visualize
-
-cellKNN <- FNN::get.knn(data = t(cisZ),k = nNeighbors)$nn.index
-dim(cellKNN)
-rownames(cellKNN) <- rownames(cellMeta)
-
-saveRDS(cellKNN,"./processed_results/DR/cisTopics/scATAC_filt_cisTopics_cellKNN.rds")
-
-rm(cisOut)
-gc()
-
-cisZ.smooth <- smoothGeneScoresNN(NNmat = cellKNN,TSSmat = cisZ,nCores = 4)
-
-gglist <- plotMarker2D(df=umap.d,markerMat = cisZ.smooth,markers = rownames(cisZ.smooth)[1:24],
-             pointSize = 0.1,rasteRize = FALSE,minCutoff = "sd3",maxCutoff = "sd3",combine = FALSE)
-
-cowplot::plot_grid(plotlist = gglist,align="hv",nrow=4)
 
 # Plot UMAPs
 library(ggrastr)
@@ -152,12 +134,6 @@ gSortSplit <- gBase + geom_point(data=cellMeta,aes(UMAP1,UMAP2,color=cellSort),s
   theme(strip.background = element_blank(),legend.position = "none",strip.text = element_text(size=12))
 gSortSplit
 
-# Huge
-library(patchwork)
-gConditionSplit / gSortSplit
-
-ggsave(plot=gConditionSplit,filename = "./processed_results/figs/scATAC_UMAP_Condition_split.pdf",width = 8,height = 3.5,useDingbats=FALSE)
-ggsave(plot=gSortSplit,filename = "./processed_results/figs/scATAC_UMAP_cellSort_split.pdf",width = 5.5,height = 3.5,useDingbats=FALSE)
 
 table(cellMeta$Condition,cellMeta$cellSort)
 
@@ -167,27 +143,6 @@ gRep <- gBase + geom_point(data=cellMeta,aes(UMAP1,UMAP2,color=SampleID),size=0.
 gRep
 
 
-# Lovain / Leiden clustering
-set.seed(123)
-igraphObj <- igraph::graph_from_adjacency_matrix(igraph::get.adjacency(igraph::graph.edgelist(data.matrix(reshape2::melt(cellKNN)[
-  ,c("Var1", "value")]), directed=FALSE)), mode = "undirected")
-
-# Louvain
-clusters <- igraph::cluster_louvain(igraphObj)
-Kmemberships <- as.numeric(igraph::membership(clusters))
-table(Kmemberships)
-
-cellMeta$Louvain <- factor(Kmemberships)
-
-labels.d <- cellMeta %>% group_by(Louvain) %>% summarise(UMAP1=median(UMAP1),UMAP2=median(UMAP2))
-
-library(ggrepel)
-gLouv <- shuf(cellMeta) %>% ggplot() + 
-  geom_point_rast(aes(UMAP1,UMAP2,color=Louvain),size=0.5,shape=16) + theme_classic() + 
-  guides(colour = guide_legend(override.aes = list(size=3))) + geom_label_repel(data=labels.d,aes(UMAP1,UMAP2,label=Louvain,color=Louvain)) + 
-  theme(legend.position = "none")
-
-gLouv
 
 
 ############################# Harmony batch correction
@@ -268,7 +223,7 @@ saveRDS(umap.harmony,"./data/annot/cellMeta.rds")
 
 
 
-############################## Motifs
+############################## Visualize Motifs
 # See 05_runchromVAR.R
 motif_dev <- readRDS("./processed_results/chromVAR/scATAC_filt_motif_dev.rds")
 motifZ <- chromVAR::deviationScores(motif_dev)
@@ -309,7 +264,6 @@ library(RColorBrewer)
 cellTypeCols <- brewer.pal(name = "Set3",n=6)
 cellTypeCols <- c(cellTypeCols,brewer.pal(name = "Paired",n=7))
 names(cellTypeCols) <- levels(as.factor(umap.harmony$cellType_GS))
-saveRDS(cellTypeCols,"./data/annot/cellTypeCols.rds")
 
 labels.d <- umap.harmony %>% group_by(cellType_GS) %>% summarise(UMAP1=median(UMAP1.h),UMAP2=median(UMAP2.h))
 
