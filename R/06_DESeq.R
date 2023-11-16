@@ -5,7 +5,6 @@
 library(dplyr)
 library(DESeq2)
 library(BuenColors)
-library(BuenRTools)
 
 
 
