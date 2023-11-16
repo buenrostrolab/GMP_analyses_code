@@ -7,8 +7,9 @@ library(BSgenome.Mmusculus.UCSC.mm10)
 library(chromVAR)
 library(motifmatchr)
 
-src_dir <- "/mnt/users/vinay/analysis/GMP/biorad"
-setwd(src_dir)
+
+setwd("<data_analysis_folder>")
+
 
 cat("Loading SE ..\n")
 countsSE <- readRDS("./processed_results/countFiles/scATAC_SE_filt.rds")
