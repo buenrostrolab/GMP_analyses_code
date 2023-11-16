@@ -5,10 +5,63 @@
 library(dplyr)
 library(cisTopic)
 library(BuenColors)
-library(BuenRTools)
 library(ComplexHeatmap)
 library(circlize)
 
+
+cacheUMAP <- function(cachePath = NULL, dataSet, runAnyway = FALSE, seed = 123, 
+          useUWOT = TRUE, ...){
+  if (!is.null(cachePath)) {
+    cat("Using provided cache root path: ", cachePath, "\n")
+    R.cache::setCacheRootPath(cachePath)
+  }
+  else {
+    R.cache::setCacheRootPath()
+    cat("Setting cache root path as: ", R.cache::getCacheRootPath(), 
+        "\n")
+  }
+  umapparams <- list(...)
+  key <- list(dataSet = dataSet, seed = seed, UWOT = useUWOT, 
+              umapparams = umapparams)
+  umap <- R.cache::loadCache(key)
+  if (is.null(umap) | runAnyway) {
+    if (is.null(umap)) 
+      cat("No existing UMAP run found for the given dataset and settings.. \n")
+    if (runAnyway) 
+      warning("runAnyway set to TRUE. May overwrite existing UMAP key-value pairs.. \n")
+    if (!useUWOT) {
+      validParams <- names(umap::umap.defaults)
+      if (!is.null(umapparams)) 
+        if (any(!names(umapparams) %in% validParams)) 
+          stop(paste("Invalid UMAP parameter provided.. See following options and defaults: ", 
+                     umap::umap.defaults, sep = "\n"))
+      cat("Running UMAP on data..\n")
+      custom.config = umap::umap.defaults
+      if (!is.null(umapparams)) {
+        custom.config[names(umapparams)] <- unlist(umapparams)
+        int_vecs <- c("n_neighbors", "n_components", 
+                      "min_dist", "local_connectivity", "bandwidth", 
+                      "alpha", "gamma", "negative_sample_rate", "spread", 
+                      "knn_repeats")
+        custom.config[int_vecs] <- as.numeric(custom.config[int_vecs])
+      }
+      custom.config$random_state = seed
+      umap <- umap::umap(dataSet, config = custom.config)
+    }
+    else {
+      cat("Running uwot's UMAP implementation ..\n")
+      set.seed(seed)
+      umap <- uwot::umap(X = dataSet, ...)
+    }
+    cat("Saving to cache ..\n")
+    R.cache::saveCache(umap, key = key)
+  }
+  else {
+    cat("Found existing UMAP run for the given dataset and settings..\n")
+  }
+  cat("Finished!\n")
+  return(umap)
+}
 
 setwd("<data_analysis_folder>")
 
@@ -158,7 +211,7 @@ dim(cisZ.harmonized)
 saveRDS(cisZ.harmonized,"./processed_results/DR/cisTopics/scATAC_filt_cisTopics_cellZ_harmony.rds")
 
 # Re-cluster
-umap.harmony <- cacheUMAP2(cachePath = "./processed_results/UMAP_cache/",
+umap.harmony <- cacheUMAP(cachePath = "./processed_results/UMAP_cache/",
                            dataSet = cisZ.harmonized,
                            metric="cosine",
                            n_neighbors=50)
