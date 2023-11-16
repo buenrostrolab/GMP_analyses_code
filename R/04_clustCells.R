@@ -7,6 +7,7 @@ library(cisTopic)
 library(BuenColors)
 library(ComplexHeatmap)
 library(circlize)
+library(patchwork)
 
 
 cacheUMAP <- function(cachePath = NULL, dataSet, runAnyway = FALSE, seed = 123, 
@@ -130,7 +131,6 @@ gBase
 
 # By condition
 conditionCols <- c("Tet2KO"="mediumpurple","Tet2KO_Sox4OE"="darkorchid4","WT"="gray","WT_Sox4OE"="darkslategray")
-saveRDS(conditionCols,"./data/annot/conditionCols.rds")
 
 gCondition <- shuf(cellMeta) %>% ggplot(aes(UMAP1,UMAP2,color=Condition)) + 
   geom_point_rast(size=0.5,shape=16) + theme_classic() + scale_color_manual(values = conditionCols) + 
