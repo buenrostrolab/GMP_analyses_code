@@ -253,7 +253,7 @@ for(i in 1:length(gMotif)){
 }
 
 
-# Load tentative cluster annotations (from Giulia)
+# Load cluster annotations (celltype labels)
 labelAnnot <- read.csv("./data/annot/bioRad_in_vivo_annotation_Gschiroli.csv",header=FALSE,row.names = 1,stringsAsFactors = FALSE)
 
 stopifnot(all(rownames(labelAnnot) %in% umap.harmony$Louvain.h))
